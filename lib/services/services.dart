@@ -25,6 +25,9 @@ class Services {
                   fontSize: 16,
                 ),
               ),
+              SizedBox(
+                width: 5,
+              ),
               Flexible(
                 flex: 2,
                 child: ModelsDrowDownWidget(),
