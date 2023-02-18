@@ -1,28 +1,70 @@
 import 'package:chatgpt_app/constants/constants.dart';
+import 'package:chatgpt_app/models/models_model.dart';
+import 'package:chatgpt_app/widgets/text_widget.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:provider/provider.dart';
 
-class ModelDropDownWidget extends StatefulWidget {
-  const ModelDropDownWidget({super.key});
+import '../providers/model_provider.dart';
+
+class ModelsDrowDownWidget extends StatefulWidget {
+  const ModelsDrowDownWidget({super.key});
 
   @override
-  State<ModelDropDownWidget> createState() => _ModelDropDownWidgetState();
+  State<ModelsDrowDownWidget> createState() => _ModelsDrowDownWidgetState();
 }
 
-class _ModelDropDownWidgetState extends State<ModelDropDownWidget> {
-  String currentModel = 'Model1';
+class _ModelsDrowDownWidgetState extends State<ModelsDrowDownWidget> {
+  String? currentModel;
 
+  bool isFirstLoading = true;
   @override
   Widget build(BuildContext context) {
-    return DropdownButton(
-      dropdownColor: scaffoldBackgroundColor,
-      iconEnabledColor: Colors.white,
-      value: currentModel,
-      items: getModelsItem,
-      onChanged: (value) {
-        setState(() {
-          currentModel = value.toString();
+    final modelsProvider = Provider.of<ModelsProvider>(context, listen: false);
+    currentModel = modelsProvider.getCurrentModel;
+    return FutureBuilder<List<ModelsModel>>(
+        future: modelsProvider.getAllModels(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting &&
+              isFirstLoading == true) {
+            isFirstLoading = false;
+            return const FittedBox(
+              child: SpinKitFadingCircle(
+                color: Colors.lightBlue,
+                size: 30,
+              ),
+            );
+          }
+          if (snapshot.hasError) {
+            return Center(
+              child: TextWidget(label: snapshot.error.toString()),
+            );
+          }
+          return snapshot.data == null || snapshot.data!.isEmpty
+              ? const SizedBox.shrink()
+              : FittedBox(
+                  child: DropdownButton(
+                    dropdownColor: scaffoldBackgroundColor,
+                    iconEnabledColor: Colors.white,
+                    items: List<DropdownMenuItem<String>>.generate(
+                        snapshot.data!.length,
+                        (index) => DropdownMenuItem(
+                            value: snapshot.data![index].id,
+                            child: TextWidget(
+                              label: snapshot.data![index].id,
+                              fontSize: 15,
+                            ))),
+                    value: currentModel,
+                    onChanged: (value) {
+                      setState(() {
+                        currentModel = value.toString();
+                      });
+                      modelsProvider.setCurrentModel(
+                        value.toString(),
+                      );
+                    },
+                  ),
+                );
         });
-      },
-    );
   }
 }
