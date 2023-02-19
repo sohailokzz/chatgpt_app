@@ -1,10 +1,10 @@
-import 'dart:developer';
 import 'package:chatgpt_app/constants/constants.dart';
 import 'package:chatgpt_app/models/chat_model.dart';
 import 'package:chatgpt_app/providers/chat_provider.dart';
 import 'package:chatgpt_app/services/assets_manager.dart';
 import 'package:chatgpt_app/services/services.dart';
 import 'package:chatgpt_app/widgets/chat_widget.dart';
+import 'package:chatgpt_app/widgets/text_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:provider/provider.dart';
@@ -151,23 +151,53 @@ class _ChatScreenState extends State<ChatScreen> {
     required ModelsProvider modelsProvider,
     required ChatProvider chatProvider,
   }) async {
+    if (isTyping) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: TextWidget(
+            label: 'Not allowed to send multiple messages',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    if (chatController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: TextWidget(
+            label: 'Please Enter Some Text',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
     try {
+      String msg = chatController.text;
       setState(() {
         isTyping = true;
         chatProvider.addUserMessage(
-          msg: chatController.text,
+          msg: msg,
         );
         chatController.clear();
         focusNode.unfocus();
       });
       await chatProvider.sendMessageAndGetUser(
-        msg: chatController.text,
+        msg: msg,
         chosenModel: modelsProvider.getCurrentModel,
       );
 
       setState(() {});
     } catch (e) {
-      log('Error $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: TextWidget(
+            label: e.toString(),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
     } finally {
       scrollListToEnd();
       setState(() {
